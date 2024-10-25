@@ -3,12 +3,31 @@ import { Link } from 'react-router-dom';
 import { Card, Tabs } from 'antd';
 import { GraduationCap } from 'lucide-react';
 import SignInForm from '../../components/signInForm';
-import SignUpForm from '../../components/signupForm';
-
-const { TabPane } = Tabs;
+import SignUpForm from '../../components/signUpForm';
 
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState('signin');
+
+  const tabItems = [
+    {
+      key: 'signin',
+      label: 'Sign In',
+      children: (
+        <Card className='p-5 shadow-2xl'>
+          <SignInForm />
+        </Card>
+      ),
+    },
+    {
+      key: 'signup',
+      label: 'Sign Up',
+      children: (
+        <Card className='p-5 shadow-2xl'>
+          <SignUpForm />
+        </Card>
+      ),
+    },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -23,21 +42,11 @@ const AuthPage = () => {
           <Tabs 
             activeKey={activeTab} 
             onChange={setActiveTab} 
+            items={tabItems}
             centered 
             tabBarStyle={{ width: '100%' }}
             className='font-bold shadow-2xl'
-          >
-            <TabPane tab="Sign In" key="signin" className='font-semibold text-2xl ss'>
-              <Card className='p-5 shadow-2xl' >
-              <SignInForm />
-              </Card>
-            </TabPane>
-            <TabPane tab="Sign Up" key="signup" className='font-semibold text-2xl'>
-              <Card className='p-5 shadow-2xl'>
-              <SignUpForm />
-              </Card>
-            </TabPane>
-          </Tabs>
+          />
         </div>
       </div>
     </div>
