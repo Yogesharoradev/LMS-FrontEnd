@@ -58,9 +58,12 @@ const App = () => {
         <Route 
           path="payment-return"
           element={ 
+            <ProtectedRoute authenticated={auth?.authenticate} user={auth?.user}>
               <PaypalPaymentReturn />
+            </ProtectedRoute>
           }
         />
+
            <Route 
           path="my-courses-page"
           element={
