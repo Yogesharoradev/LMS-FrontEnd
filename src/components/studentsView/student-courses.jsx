@@ -16,6 +16,7 @@ const StudentCourses = () => {
     const [filters, setFilters] = useState({});
     const [searchParams, setSearchParams] = useSearchParams();
 
+
     useEffect(() => {
         const savedFilters = sessionStorage.getItem("filters");
         if (savedFilters) {
@@ -68,7 +69,8 @@ const StudentCourses = () => {
     };
 
     useEffect(() => {
-        fetchCourseData(filters, sort);
+        if (filters !== null && sort !== null)
+            fetchCourseData(filters, sort);
     }, [filters, sort]);
 
     const items = [
@@ -105,46 +107,69 @@ const StudentCourses = () => {
                 <h1 className='text-3xl font-bold mb-4'>All Courses</h1>
                 <div className='flex flex-col gap-4 md:flex-row'>
                     <aside className='w-full md:w-64 space-y-4'>
-                        <div className='border rounded p-4'>
-                            <h3 className='font-semibold'>Filters</h3>
-                            <div>
-                                <h4 className='font-semibold'>Categories</h4>
-                                {/* Example for category filter */}
-                                {filters.category?.map((category) => (
-                                    <Checkbox
-                                        key={category}
-                                        onChange={() => handleFilterOnChange("category", { id: category })}
-                                        checked={filters.category.includes(category)}
-                                    >
-                                        {category}
-                                    </Checkbox>
-                                ))}
-                            </div>
+                        <div className='space-y-4'>
+                            {
+                                Object.keys(filterOptions).map((sectionId, idx) => (
+                                    <div key={idx} className='space-y-4'>
+                                        <h3 className='font-bold mb-3'>{sectionId.toUpperCase()}</h3>
+                                        <div className='grid gap-2 mt-2'>
+                                            {
+                                                filterOptions[sectionId].map(option => (
+                                                    <label key={option.id} className='flex font-medium items-center gap-3'>
+                                                        <Checkbox
+                                                            checked={filters && Object.keys(filters).length > 0 && filters[sectionId] && filters[sectionId].indexOf(option.id) > -1}
+                                                            onChange={() => handleFilterOnChange(sectionId, option)}
+                                                        />
+                                                        <span>{option.label}</span>
+                                                    </label>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                ))
+                            }
                         </div>
                     </aside>
-
                     <main className='flex-1'>
-                        <div className='flex justify-between items-center mb-4'>
-                            <Dropdown menu={{ items }} trigger={['click']}>
-                                <Button onClick={(e) => e.preventDefault()}>
-                                    Sort By <ArrowUpDownIcon />
+                        <div className='flex justify-between items-center mb-4 gap-5 flex-wrap'>
+                            <Dropdown menu={{ items }}>
+                                <Button className='font-semibold text-[16px]'>
+                                    <ArrowUpDownIcon className='h-4 w-4' />
+                                    Sort By
                                 </Button>
                             </Dropdown>
+                            <span className='text-sm text-black font-bold'>{studentViewCourseData?.length || 0} Results</span>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'>
                             {
                                 studentViewCourseData && studentViewCourseData.length > 0 ?
-                                    studentViewCourseData?.map((item, idx) => (
-                                        <Card key={idx} className='border rounded-lg overflow-hidden shadow cursor-pointer' onClick={() => handleNavigate(item?._id)}>
-                                            <img src={item?.image} height={150} width={300} className='w-full h-40 object-cover' />
-                                            <div className='p-4'>
-                                                <h1 className='font-bold mb-2'>{item?.title}</h1>
-                                                <h1 className='text-sm text-gray-700 mb-2'>{item?.instructorName}</h1>
-                                                <p className='font-bold text-[16px]'>$ {item.pricing}</p>
+                                    studentViewCourseData.map(item => (
+                                        <Card
+                                            onClick={() => handleNavigate(item?._id)}
+                                            key={item?._id}
+                                            className='hover:cursor-pointer hover:bg-gray-100'
+                                        >
+                                            <div className='flex gap-4 p-4'>
+                                                <div className='w-48 h-32 flex-shrink-0'>
+                                                    <img src={item?.image} className='w-full h-full object-cover' alt={item?.title} />
+                                                </div>
+                                                <div className='flex-1'>
+                                                    <h1 className='text-xl mb-2'>{item?.title}</h1>
+                                                    <p className='text-sm text-gray-600 mb-1'>Created By {"  "}
+                                                        <span className='font-bold'>{item?.instructorName.toUpperCase()}</span>
+                                                    </p>
+                                                    <p className='text-[14px] text-gray-600 mb-2 mt-2'>
+                                                        {`${item?.curriculum?.length} Lectures - ${item?.level.toUpperCase()} Level`}
+                                                    </p>
+                                                    <p className='font-bold'>
+                                                        $ {item?.pricing}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </Card>
                                     ))
-                                    : <h1>No Courses Available</h1>
+                                    : <h1 className='font-extrabold text-2xl p-3'>No Courses Found</h1>
                             }
                         </div>
                     </main>

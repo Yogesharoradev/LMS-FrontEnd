@@ -50,7 +50,7 @@ const Header = () => {
                     </button>
                     <TvMinimalPlay className="w-8 h-8 cursor-pointer" />
                 </div>
-                <Button className='bg-black text-white' type='primary' onClick={handleLogout}>
+                <Button className='bg-black text-white mt-3' type='primary' onClick={handleLogout}>
                     Sign Out
                 </Button>
             </div>
