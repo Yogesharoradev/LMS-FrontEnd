@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import Header from './header';
-import { Button, Card, Checkbox, Dropdown } from 'antd';
-import { ArrowUpDownIcon } from 'lucide-react';
+import { Button, Card, Checkbox, Dropdown, Drawer } from 'antd';
+import { ArrowUpDownIcon, FilterIcon } from 'lucide-react';
 import { filterOptions } from '../../config';
 import axiosInstance from '../../lib/axiosInstance';
 import { StudentContext } from '../../context/student-context';
@@ -15,7 +15,7 @@ const StudentCourses = () => {
     const [sort, setSort] = useState("price-lowtohigh");
     const [filters, setFilters] = useState({});
     const [searchParams, setSearchParams] = useSearchParams();
-
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         const savedFilters = sessionStorage.getItem("filters");
@@ -28,11 +28,7 @@ const StudentCourses = () => {
         try {
             const response = await axiosInstance.get(`/student/get/course/${id}/${auth?.user?._id}`);
             if (response?.data?.success) {
-                if (response?.data?.isCoursepurchased) {
-                    navigate(`/course-progress/${id}`);
-                } else {
-                    navigate(`/course/details/${id}`);
-                }
+                navigate(response?.data?.isCoursepurchased ? `/course-progress/${id}` : `/course/details/${id}`);
             }
         } catch (err) {
             console.log(err);
@@ -43,24 +39,19 @@ const StudentCourses = () => {
         const queryParams = [];
         for (const [key, value] of Object.entries(filterParams)) {
             if (Array.isArray(value) && value.length > 0) {
-                const paramsValue = value.join(",");
-                queryParams.push(`${key}=${encodeURIComponent(paramsValue)}`);
+                queryParams.push(`${key}=${encodeURIComponent(value.join(","))}`);
             }
         }
         return queryParams.join("&");
     };
 
     useEffect(() => {
-        const buildQueryStringForFilters = createSearchParamsHelper(filters);
-        setSearchParams(new URLSearchParams(buildQueryStringForFilters));
+        setSearchParams(new URLSearchParams(createSearchParamsHelper(filters)));
     }, [filters]);
 
     const fetchCourseData = async (filters, sort) => {
         try {
-            const query = new URLSearchParams({
-                ...filters,
-                sortBy: sort
-            });
+            const query = new URLSearchParams({ ...filters, sortBy: sort });
             const result = await axiosInstance.get(`/student/get?${query}`);
             setStudentViewCourseData(result?.data.result);
         } catch (err) {
@@ -69,8 +60,7 @@ const StudentCourses = () => {
     };
 
     useEffect(() => {
-        if (filters !== null && sort !== null)
-            fetchCourseData(filters, sort);
+        fetchCourseData(filters, sort);
     }, [filters, sort]);
 
     const items = [
@@ -82,21 +72,15 @@ const StudentCourses = () => {
 
     const handleFilterOnChange = (getSectionId, getCurrentOption) => {
         let cpyFilters = { ...filters };
-        const indexOfCurrentSection = Object.keys(cpyFilters).indexOf(getSectionId);
-
-        if (indexOfCurrentSection === -1) {
-            cpyFilters = {
-                ...cpyFilters,
-                [getSectionId]: [getCurrentOption.id]
-            };
+        if (!cpyFilters[getSectionId]) cpyFilters[getSectionId] = [];
+        const indexOfCurrentOption = cpyFilters[getSectionId].indexOf(getCurrentOption.id);
+        
+        if (indexOfCurrentOption === -1) {
+            cpyFilters[getSectionId].push(getCurrentOption.id);
         } else {
-            const indexOfCurrentOption = cpyFilters[getSectionId].indexOf(getCurrentOption.id);
-            if (indexOfCurrentOption === -1) {
-                cpyFilters[getSectionId].push(getCurrentOption.id);
-            } else {
-                cpyFilters[getSectionId].splice(indexOfCurrentOption, 1);
-            }
+            cpyFilters[getSectionId].splice(indexOfCurrentOption, 1);
         }
+        
         setFilters(cpyFilters);
     };
 
@@ -106,71 +90,92 @@ const StudentCourses = () => {
             <div className='container mx-auto p-4'>
                 <h1 className='text-3xl font-bold mb-4'>All Courses</h1>
                 <div className='flex flex-col gap-4 md:flex-row'>
-                    <aside className='w-full md:w-64 space-y-4'>
-                        <div className='space-y-4'>
-                            {
-                                Object.keys(filterOptions).map((sectionId, idx) => (
-                                    <div key={idx} className='space-y-4'>
-                                        <h3 className='font-bold mb-3'>{sectionId.toUpperCase()}</h3>
-                                        <div className='grid gap-2 mt-2'>
-                                            {
-                                                filterOptions[sectionId].map(option => (
-                                                    <label key={option.id} className='flex font-medium items-center gap-3'>
-                                                        <Checkbox
-                                                            checked={filters && Object.keys(filters).length > 0 && filters[sectionId] && filters[sectionId].indexOf(option.id) > -1}
-                                                            onChange={() => handleFilterOnChange(sectionId, option)}
-                                                        />
-                                                        <span>{option.label}</span>
-                                                    </label>
-                                                ))
-                                            }
-                                        </div>
-                                    </div>
-                                ))
-                            }
-                        </div>
+                    <aside className='w-full md:w-64 space-y-4 hidden md:block'>
+                        {Object.keys(filterOptions).map((sectionId, idx) => (
+                            <div key={idx} className='space-y-4'>
+                                <h3 className='font-bold mb-3'>{sectionId.toUpperCase()}</h3>
+                                <div className='grid gap-2 mt-2'>
+                                    {filterOptions[sectionId].map(option => (
+                                        <label key={option.id} className='flex font-medium items-center gap-3'>
+                                            <Checkbox
+                                                checked={filters?.[sectionId]?.includes(option.id)}
+                                                onChange={() => handleFilterOnChange(sectionId, option)}
+                                            />
+                                            <span>{option.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                     </aside>
+
+                    <Button className='block md:hidden' onClick={() => setIsSidebarOpen(true)}>
+                        <FilterIcon className='h-5 w-5 mr-2' /> Filters
+                    </Button>
+
+                    <Drawer
+                        title="Filters"
+                        placement="right"
+                        onClose={() => setIsSidebarOpen(false)}
+                        open={isSidebarOpen}
+                        width={300}
+                    >
+                        {Object.keys(filterOptions).map((sectionId, idx) => (
+                            <div key={idx} className='space-y-4'>
+                                <h3 className='font-bold mb-3'>{sectionId.toUpperCase()}</h3>
+                                <div className='grid gap-2 mt-2'>
+                                    {filterOptions[sectionId].map(option => (
+                                        <label key={option.id} className='flex font-medium items-center gap-3'>
+                                            <Checkbox
+                                                checked={filters?.[sectionId]?.includes(option.id)}
+                                                onChange={() => handleFilterOnChange(sectionId, option)}
+                                            />
+                                            <span>{option.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </Drawer>
+
                     <main className='flex-1'>
                         <div className='flex justify-between items-center mb-4 gap-5 flex-wrap'>
                             <Dropdown menu={{ items }}>
                                 <Button className='font-semibold text-[16px]'>
-                                    <ArrowUpDownIcon className='h-4 w-4' />
-                                    Sort By
+                                    <ArrowUpDownIcon className='h-4 w-4' /> Sort By
                                 </Button>
                             </Dropdown>
                             <span className='text-sm text-black font-bold'>{studentViewCourseData?.length || 0} Results</span>
                         </div>
 
                         <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'>
-                            {
-                                studentViewCourseData && studentViewCourseData.length > 0 ?
-                                    studentViewCourseData.map(item => (
-                                        <Card
-                                            onClick={() => handleNavigate(item?._id)}
-                                            key={item?._id}
-                                            className='hover:cursor-pointer hover:bg-gray-100'
-                                        >
-                                            <div className='flex gap-4 p-4'>
-                                                <div className='w-48 h-32 flex-shrink-0'>
-                                                    <img src={item?.image} className='w-full h-full object-cover' alt={item?.title} />
-                                                </div>
-                                                <div className='flex-1'>
-                                                    <h1 className='text-xl mb-2'>{item?.title}</h1>
-                                                    <p className='text-sm text-gray-600 mb-1'>Created By {"  "}
-                                                        <span className='font-bold'>{item?.instructorName.toUpperCase()}</span>
-                                                    </p>
-                                                    <p className='text-[14px] text-gray-600 mb-2 mt-2'>
-                                                        {`${item?.curriculum?.length} Lectures - ${item?.level.toUpperCase()} Level`}
-                                                    </p>
-                                                    <p className='font-bold'>
-                                                        $ {item?.pricing}
-                                                    </p>
-                                                </div>
+                            {studentViewCourseData?.length > 0 ? (
+                                studentViewCourseData.map(item => (
+                                    <Card
+                                        onClick={() => handleNavigate(item?._id)}
+                                        key={item?._id}
+                                        className='hover:cursor-pointer hover:bg-gray-100'
+                                    >
+                                        <div className='flex gap-4 p-4'>
+                                            <div className='w-48 h-32 flex-shrink-0'>
+                                                <img src={item?.image} className='w-full h-full object-cover' alt={item?.title} />
                                             </div>
-                                        </Card>
-                                    ))
-                                    : <h1 className='font-extrabold text-2xl p-3'>No Courses Found</h1>
-                            }
+                                            <div className='flex-1'>
+                                                <h1 className='text-xl mb-2'>{item?.title}</h1>
+                                                <p className='text-sm text-gray-600 mb-1'>Created By{" "}
+                                                    <span className='font-bold'>{item?.instructorName.toUpperCase()}</span>
+                                                </p>
+                                                <p className='text-[14px] text-gray-600 mb-2 mt-2'>
+                                                    {`${item?.curriculum?.length} Lectures - ${item?.level.toUpperCase()} Level`}
+                                                </p>
+                                                <p className='font-bold'>
+                                                    $ {item?.pricing}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                ))
+                            ) : <h1 className='font-extrabold text-2xl p-3'>No Courses Found</h1>}
                         </div>
                     </main>
                 </div>
