@@ -109,7 +109,7 @@ const StudentCourses = () => {
                         ))}
                     </aside>
 
-                    <Button className='block md:hidden' onClick={() => setIsSidebarOpen(true)}>
+                    <Button className='flex md:hidden text-center items-center bg-black text-white font-semibold' onClick={() => setIsSidebarOpen(true)}>
                         <FilterIcon className='h-5 w-5 mr-2' /> Filters
                     </Button>
 
@@ -122,7 +122,7 @@ const StudentCourses = () => {
                     >
                         {Object.keys(filterOptions).map((sectionId, idx) => (
                             <div key={idx} className='space-y-4'>
-                                <h3 className='font-bold mb-3'>{sectionId.toUpperCase()}</h3>
+                                <h3 className='font-bold mt-3 mb-3'>{sectionId.toUpperCase()}</h3>
                                 <div className='grid gap-2 mt-2'>
                                     {filterOptions[sectionId].map(option => (
                                         <label key={option.id} className='flex font-medium items-center gap-3'>
@@ -156,7 +156,7 @@ const StudentCourses = () => {
                                         key={item?._id}
                                         className='hover:cursor-pointer hover:bg-gray-100'
                                     >
-                                        <div className='flex gap-4 p-4'>
+                                        <div className='flex flex-col gap-4 p-4'>
                                             <div className='w-48 h-32 flex-shrink-0'>
                                                 <img src={item?.image} className='w-full h-full object-cover' alt={item?.title} />
                                             </div>
